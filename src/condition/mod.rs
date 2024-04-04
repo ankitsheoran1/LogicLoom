@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::any::Any;
 use std::error::Error;
 
-struct Condition {
+pub struct Condition {
     input_path: String,
     functions: Vec<fn(&HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>>>,
 }
 
 impl Condition {
-    fn new(input_path: String, functions: Vec<fn(&HashMap<String, Box<dyn Any>>)-> Result<bool, Box<dyn Error>>>) -> Self {
+    pub fn new(input_path: String, functions: Vec<fn(&HashMap<String, Box<dyn Any>>)-> Result<bool, Box<dyn Error>>>) -> Self {
         Condition {
             input_path,
             functions
@@ -16,7 +16,7 @@ impl Condition {
 
     }
 
-    fn eval(&self, input: &HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>> {
+    pub fn eval(&self, input: &HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>> {
         for function in &self.functions {
             let result = function(input)?;
             if !result {
@@ -28,6 +28,59 @@ impl Condition {
 
 
 }
+
+enum LogicalOperator {
+    OR,
+    AND,
+}
+
+struct ConditionType {
+    chain_type: LogicalOperator
+} 
+
+impl ConditionType {
+
+    pub fn new(chain_type: LogicalOperator) -> Self {
+        ConditionType { chain_type }
+    }
+
+    pub fn eveluate(&self, input: &HashMap<String, Box<dyn Any>>, condition: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+      match self.chain_type {
+         LogicalOperator::OR => {
+            self.eveluateOR(input, condition)
+         }
+         LogicalOperator::AND => {
+            Ok(true)
+         }
+         
+
+      }
+    }
+
+    pub fn eveluateOR(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+        for condition in conditions {
+            println!("Evaluating condition with input_path: {}", condition.input_path);
+            if condition.eval(input)? {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+       
+    }
+
+    pub fn eveluateAND(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+        let mut count = conditions.len();
+        for condition in conditions {
+            if condition.eval(input)? {
+                 count -= 1;
+            }
+        }
+
+        Ok(count == 0)
+    }
+    
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -108,6 +161,39 @@ mod tests {
         );
 
         assert_eq!(condition.eval(&input).unwrap(), true);
+    }
+
+    fn age_less_than_30(input: &HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>> {
+        if let Some(age) = input.get("age").and_then(|v| v.downcast_ref::<i32>()) {
+            println!("success for age ---------------------");
+            Ok(*age < 30)
+        } else {
+            println!("failure for age ---------------------");
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "age is not an i32")))
+        }
+    }
+
+    fn name_length_greater_than_10(input: &HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>> {
+        if let Some(name) = input.get("name").and_then(|v| v.downcast_ref::<String>()) {
+            Ok(name.len() > 10)
+        } else {
+            Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "name is not a String")))
+        }
+    }
+
+    #[test]
+    fn evaluate_or_condition() {
+        let condition_age = Condition::new("age".to_string(), vec![age_less_than_30]);
+        let condition_name = Condition::new("name".to_string(), vec![name_length_greater_than_10]);
+
+        let mut input = HashMap::new();
+        input.insert("name".to_string(), Box::new("Ankit".to_string()) as Box<dyn Any>);
+        input.insert("age".to_string(), Box::new(28) as Box<dyn Any>);
+
+        let condition_type = ConditionType::new(LogicalOperator::OR);
+        let result = condition_type.eveluate(&input, vec![condition_age, condition_name]);
+
+        assert_eq!(result.unwrap(), true);
     }
 }
 
