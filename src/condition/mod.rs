@@ -44,20 +44,20 @@ impl ConditionType {
         ConditionType { chain_type }
     }
 
-    pub fn eveluate(&self, input: &HashMap<String, Box<dyn Any>>, condition: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+    pub fn evaluate(&self, input: &HashMap<String, Box<dyn Any>>, condition: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
       match self.chain_type {
          LogicalOperator::OR => {
-            self.eveluateOR(input, condition)
+            self.evaluate_or(input, condition)
          }
          LogicalOperator::AND => {
-            Ok(true)
+           self.evaluate_and(input, condition)
          }
          
 
       }
     }
 
-    pub fn eveluateOR(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+    pub fn evaluate_or(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
         for condition in conditions {
             println!("Evaluating condition with input_path: {}", condition.input_path);
             if condition.eval(input)? {
@@ -68,7 +68,7 @@ impl ConditionType {
        
     }
 
-    pub fn eveluateAND(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
+    pub fn evaluate_and(&self,  input: &HashMap<String, Box<dyn Any>>, conditions: Vec<Condition>) -> Result<bool, Box<dyn Error>> {
         let mut count = conditions.len();
         for condition in conditions {
             if condition.eval(input)? {
@@ -165,10 +165,8 @@ mod tests {
 
     fn age_less_than_30(input: &HashMap<String, Box<dyn Any>>) -> Result<bool, Box<dyn Error>> {
         if let Some(age) = input.get("age").and_then(|v| v.downcast_ref::<i32>()) {
-            println!("success for age ---------------------");
             Ok(*age < 30)
         } else {
-            println!("failure for age ---------------------");
             Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "age is not an i32")))
         }
     }
@@ -191,7 +189,7 @@ mod tests {
         input.insert("age".to_string(), Box::new(28) as Box<dyn Any>);
 
         let condition_type = ConditionType::new(LogicalOperator::OR);
-        let result = condition_type.eveluate(&input, vec![condition_age, condition_name]);
+        let result = condition_type.evaluate(&input, vec![condition_age, condition_name]);
 
         assert_eq!(result.unwrap(), true);
     }
