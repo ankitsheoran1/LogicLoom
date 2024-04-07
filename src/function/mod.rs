@@ -3,8 +3,10 @@ use std::error::Error;
 use std::any::Any;
 use std::io;
 
+pub  mod list_function;
+
 #[derive(Hash, Eq, PartialEq, Debug)]
-pub enum FunctionName {
+pub enum SingleInputFunction {
    Empty, 
    NonEmpty,
    Equal,
@@ -30,25 +32,25 @@ pub enum FunctionName {
 
 type Function = Box<dyn Fn(Box<dyn Any>, Vec<Box<dyn Any>>) -> Result<bool, Box<dyn Error>> + 'static>;
 
-fn default() -> HashMap<FunctionName, Function> {
-    let mut map: HashMap<FunctionName, Function>  = HashMap::new();
+fn default() -> HashMap<SingleInputFunction, Function> {
+    let mut map: HashMap<SingleInputFunction, Function>  = HashMap::new();
     default_general_functions(&mut map);
     default_numeric_function(&mut map);
     default_string_function(&mut map);
     map
 }
 
-fn default_general_functions(m : &mut HashMap<FunctionName, Function>) -> &mut HashMap<FunctionName, Function> {
+fn default_general_functions(m : &mut HashMap<SingleInputFunction, Function>) -> &mut HashMap<SingleInputFunction, Function> {
    // let mut m = HashMap::new();
     
-    m.insert(FunctionName::Empty, Box::new(|input: Box<dyn Any>, _args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::Empty, Box::new(|input: Box<dyn Any>, _args: Vec<Box<dyn Any>>| {
         match input.downcast_ref::<String>() {
             Some(string) => Ok(string.is_empty()),
             None => Err(Box::new(io::Error::new(io::ErrorKind::Other, "Input is not a string")) as Box<dyn Error>),
         }
     })as Function);
 
-    m.insert(FunctionName::NonEmpty, Box::new(|input: Box<dyn Any>, _args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::NonEmpty, Box::new(|input: Box<dyn Any>, _args: Vec<Box<dyn Any>>| {
         match input.downcast_ref::<String>() {
             Some(string) => Ok(string.is_empty() == false),
             None => Err(Box::new(io::Error::new(io::ErrorKind::Other, "Input is not a string")) as Box<dyn Error>),
@@ -56,7 +58,7 @@ fn default_general_functions(m : &mut HashMap<FunctionName, Function>) -> &mut H
         }
     }));
 
-    m.insert(FunctionName::Equal, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::Equal, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         if args.len() != 1 {
             return Err(Box::new(io::Error::new(io::ErrorKind::Other, "Equal: needs one argument")));
         }
@@ -72,81 +74,81 @@ fn default_general_functions(m : &mut HashMap<FunctionName, Function>) -> &mut H
     m
 }
 
-fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut HashMap<FunctionName, Function>{
+fn default_numeric_function(m: &mut HashMap<SingleInputFunction, Function>) -> &mut HashMap<SingleInputFunction, Function>{
 
-    m.insert(FunctionName::Greater, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::Greater, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Greater, &*input, &args_refs, 1) {
+        match parse_numeric(SingleInputFunction::Greater, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num > args_no[0]),
             Err(e) => Err(e)
         }
     }));
 
-    m.insert(FunctionName::GreaterEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::GreaterEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::GreaterEq, &*input, &args_refs, 1) {
+        match parse_numeric(SingleInputFunction::GreaterEq, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num >= args_no[0]),
             Err(e) => Err(e)
             
         }
     }));
 
-    m.insert(FunctionName::Lower, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::Lower, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Lower, &*input, &args_refs, 1) {
+        match parse_numeric(SingleInputFunction::Lower, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num < args_no[0]),
             Err(e) => Err(e)
             
         }
     }));
 
-    m.insert(FunctionName::LowerEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::LowerEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::LowerEq, &*input, &args_refs, 1) {
+        match parse_numeric(SingleInputFunction::LowerEq, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num <= args_no[0]),
             Err(e) => Err(e)
             
         }
     }));
 
-    m.insert(FunctionName::Between, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::Between, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Between, &*input, &args_refs, 2) {
+        match parse_numeric(SingleInputFunction::Between, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num > args_no[0] && num < args_no[1]),
             Err(e) => Err(e)
             
         }
     }));
     
-    m.insert(FunctionName::BetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::BetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::BetweenEq, &*input, &args_refs, 2) {
+        match parse_numeric(SingleInputFunction::BetweenEq, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num >= args_no[0] && num <= args_no[0]),
             Err(e) => Err(e)
             
         }
     }));
 
-    m.insert(FunctionName::NotBetween, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::NotBetween, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Between, &*input, &args_refs, 2) {
+        match parse_numeric(SingleInputFunction::Between, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num <= args_no[0] || num >= args_no[0]),
             Err(e) => Err(e)
             
         }
     }));
 
-    m.insert(FunctionName::NotBetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
+    m.insert(SingleInputFunction::NotBetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::NotBetweenEq, &*input, &args_refs, 2) {
+        match parse_numeric(SingleInputFunction::NotBetweenEq, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num > args_no[0] && num < args_no[0]),
             Err(e) => Err(e)
             
@@ -158,7 +160,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
 
 }
 
-fn parse_numeric( function_name: FunctionName ,
+fn parse_numeric( function_name: SingleInputFunction ,
     input: &dyn Any,
     args: &[&dyn Any],
     required_args_count: usize) -> Result<(f64, Vec<f64>), Box<dyn Error>> {
@@ -209,8 +211,8 @@ fn parse_numeric( function_name: FunctionName ,
 
 
 
-fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut HashMap<FunctionName, Function> {
-    m.insert(FunctionName::EqualIgnoreCase, Box::new(|input, args| {
+fn default_string_function(m: &mut HashMap<SingleInputFunction, Function>)  -> &mut HashMap<SingleInputFunction, Function> {
+    m.insert(SingleInputFunction::EqualIgnoreCase, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("EqualIgnoreCase: needs one argument".into());
         }
@@ -219,7 +221,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(input_str.eq_ignore_ascii_case(arg_str))
     }));
 
-    m.insert(FunctionName::EqualAnyIgnoreCase, Box::new(|input, args| {
+    m.insert(SingleInputFunction::EqualAnyIgnoreCase, Box::new(|input, args| {
         let input_str = input.downcast_ref::<String>().ok_or("Input is not a string")?;
         for arg in args {
             if let Some(arg_str) = arg.downcast_ref::<String>() {
@@ -231,7 +233,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(false)
     }));
 
-    m.insert(FunctionName::EqualAny, Box::new(|input, args| {
+    m.insert(SingleInputFunction::EqualAny, Box::new(|input, args| {
         let input_str = input.downcast_ref::<String>().ok_or("Input is not a string")?;
         for arg in args {
             if let Some(arg_str) = arg.downcast_ref::<String>() {
@@ -243,7 +245,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(false)
     }));
 
-    m.insert(FunctionName::NotEqualAny, Box::new(|input, args| {
+    m.insert(SingleInputFunction::NotEqualAny, Box::new(|input, args| {
         let input_str = input.downcast_ref::<String>().ok_or("Input is not a string")?;
         for arg in args {
             if let Some(arg_str) = arg.downcast_ref::<String>() {
@@ -255,7 +257,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(true)
     }));
 
-    m.insert(FunctionName::StartsWith, Box::new(|input, args| {
+    m.insert(SingleInputFunction::StartsWith, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("StartsWith: needs one argument".into());
         }
@@ -264,7 +266,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(input_str.starts_with(arg_str))
     }));
 
-    m.insert(FunctionName::StartsWithIgnoreCase, Box::new(|input, args| {
+    m.insert(SingleInputFunction::StartsWithIgnoreCase, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("StartsWith: needs one argument".into());
         }
@@ -273,7 +275,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(input_str.to_lowercase().starts_with(&arg_str.to_lowercase()))
     }));
 
-    m.insert(FunctionName::EndsWith, Box::new(|input, args| {
+    m.insert(SingleInputFunction::EndsWith, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("EndsWith: needs one argument".into());
         }
@@ -282,7 +284,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(input_str.ends_with(arg_str))
     }));
 
-    m.insert(FunctionName::EndsWithIgnoreCase, Box::new(|input, args| {
+    m.insert(SingleInputFunction::EndsWithIgnoreCase, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("EndsWithIgnoreCase: needs one argument".into());
         }
@@ -291,7 +293,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         Ok(input_str.to_lowercase().ends_with(&arg_str.to_lowercase()))
     }));
 
-    m.insert(FunctionName::Contains, Box::new(|input, args| {
+    m.insert(SingleInputFunction::Contains, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("EndsWithIgnoreCase: needs one argument".into());
         }
@@ -299,7 +301,7 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
         let arg_str = args[0].downcast_ref::<String>().ok_or("Argument is not a string")?;
         Ok(input_str.contains(arg_str))
     }));
-    m.insert(FunctionName::ContainsIgnoreCase, Box::new(|input, args| {
+    m.insert(SingleInputFunction::ContainsIgnoreCase, Box::new(|input, args| {
         if args.len() != 1 {
             return Err("EndsWithIgnoreCase: needs one argument".into());
         }
@@ -322,74 +324,74 @@ mod tests {
     fn test_default_single_input_functions() {
         let default_functions = default();
 
-        let result = default_functions[&FunctionName::Empty](Box::new(String::from("")), vec![]);
+        let result = default_functions[&SingleInputFunction::Empty](Box::new(String::from("")), vec![]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::NonEmpty](Box::new(String::from("ankit")), vec![]);
+        let result = default_functions[&SingleInputFunction::NonEmpty](Box::new(String::from("ankit")), vec![]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("ankit"))]);
+        let result = default_functions[&SingleInputFunction::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("ankit"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("anki"))]);
+        let result = default_functions[&SingleInputFunction::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("anki"))]);
         assert!(result.is_ok_and(|x| x == false));
     
-        let result = default_functions[&FunctionName::Greater](Box::new(String::from("1")), vec![Box::new(String::from("0"))]);
+        let result = default_functions[&SingleInputFunction::Greater](Box::new(String::from("1")), vec![Box::new(String::from("0"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::GreaterEq](Box::new(String::from("1")), vec![Box::new(String::from("1"))]);
+        let result = default_functions[&SingleInputFunction::GreaterEq](Box::new(String::from("1")), vec![Box::new(String::from("1"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        let result = default_functions[&SingleInputFunction::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
         assert!(result.is_ok_and(|x| x == true));
 
 
-        let result = default_functions[&FunctionName::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        let result = default_functions[&SingleInputFunction::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::LowerEq](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        let result = default_functions[&SingleInputFunction::LowerEq](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::Between](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        let result = default_functions[&SingleInputFunction::Between](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::BetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        let result = default_functions[&SingleInputFunction::BetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::NotBetween](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        let result = default_functions[&SingleInputFunction::NotBetween](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::NotBetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        let result = default_functions[&SingleInputFunction::NotBetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
         assert!(result.is_ok_and(|x| x == false));
 
-        let result = default_functions[&FunctionName::EqualIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("ANKIT"))]);
+        let result = default_functions[&SingleInputFunction::EqualIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("ANKIT"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::EqualAnyIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
+        let result = default_functions[&SingleInputFunction::EqualAnyIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::EqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("Ankit"))]);
+        let result = default_functions[&SingleInputFunction::EqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("Ankit"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::NotEqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
+        let result = default_functions[&SingleInputFunction::NotEqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::StartsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Ankit"))]);
+        let result = default_functions[&SingleInputFunction::StartsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Ankit"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::StartsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("ANKIT"))]);
+        let result = default_functions[&SingleInputFunction::StartsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("ANKIT"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::EndsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
+        let result = default_functions[&SingleInputFunction::EndsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::EndsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
+        let result = default_functions[&SingleInputFunction::EndsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::Contains](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
+        let result = default_functions[&SingleInputFunction::Contains](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
         assert!(result.is_ok_and(|x| x == true));
 
-        let result = default_functions[&FunctionName::ContainsIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
+        let result = default_functions[&SingleInputFunction::ContainsIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
         assert!(result.is_ok_and(|x| x == true));
     }
 }
