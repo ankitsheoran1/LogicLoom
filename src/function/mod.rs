@@ -4,6 +4,7 @@ use std::any::Any;
 use std::io;
 
 pub  mod list_function;
+pub mod aggregator;
 
 #[derive(Hash, Eq, PartialEq, Debug)]
 pub enum SingleInputFunction {
