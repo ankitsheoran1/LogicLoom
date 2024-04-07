@@ -77,7 +77,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::Greater, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Greater, &input, &args_refs, 1) {
+        match parse_numeric(FunctionName::Greater, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num > args_no[0]),
             Err(e) => Err(e)
         }
@@ -86,7 +86,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::GreaterEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::GreaterEq, &input, &args_refs, 1) {
+        match parse_numeric(FunctionName::GreaterEq, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num >= args_no[0]),
             Err(e) => Err(e)
             
@@ -96,7 +96,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::Lower, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Lower, &input, &args_refs, 1) {
+        match parse_numeric(FunctionName::Lower, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num < args_no[0]),
             Err(e) => Err(e)
             
@@ -106,7 +106,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::LowerEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::LowerEq, &input, &args_refs, 1) {
+        match parse_numeric(FunctionName::LowerEq, &*input, &args_refs, 1) {
             Ok((num, args_no)) =>  Ok(num <= args_no[0]),
             Err(e) => Err(e)
             
@@ -116,8 +116,8 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::Between, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Between, &input, &args_refs, 2) {
-            Ok((num, args_no)) =>  Ok(num > args_no[0] && num < args_no[0]),
+        match parse_numeric(FunctionName::Between, &*input, &args_refs, 2) {
+            Ok((num, args_no)) =>  Ok(num > args_no[0] && num < args_no[1]),
             Err(e) => Err(e)
             
         }
@@ -126,7 +126,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::BetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::BetweenEq, &input, &args_refs, 2) {
+        match parse_numeric(FunctionName::BetweenEq, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num >= args_no[0] && num <= args_no[0]),
             Err(e) => Err(e)
             
@@ -136,7 +136,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::NotBetween, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::Between, &input, &args_refs, 2) {
+        match parse_numeric(FunctionName::Between, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num <= args_no[0] || num >= args_no[0]),
             Err(e) => Err(e)
             
@@ -146,7 +146,7 @@ fn default_numeric_function(m: &mut HashMap<FunctionName, Function>) -> &mut Has
     m.insert(FunctionName::NotBetweenEq, Box::new(|input: Box<dyn Any>, args: Vec<Box<dyn Any>>| {
         let args_refs: Vec<&dyn Any> = args.iter().map(|arg| arg.as_ref()).collect();
 
-        match parse_numeric(FunctionName::NotBetweenEq, &input, &args_refs, 2) {
+        match parse_numeric(FunctionName::NotBetweenEq, &*input, &args_refs, 2) {
             Ok((num, args_no)) =>  Ok(num > args_no[0] && num < args_no[0]),
             Err(e) => Err(e)
             
@@ -314,6 +314,8 @@ fn default_string_function(m: &mut HashMap<FunctionName, Function>)  -> &mut Has
 
 #[cfg(test)]
 mod tests {
+    use std::result;
+
     use super::*;
 
     #[test]
@@ -321,6 +323,73 @@ mod tests {
         let default_functions = default();
 
         let result = default_functions[&FunctionName::Empty](Box::new(String::from("")), vec![]);
-        assert!(result.is_ok());
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::NonEmpty](Box::new(String::from("ankit")), vec![]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("ankit"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::Equal](Box::new(String::from("ankit")), vec![Box::new(String::from("anki"))]);
+        assert!(result.is_ok_and(|x| x == false));
+    
+        let result = default_functions[&FunctionName::Greater](Box::new(String::from("1")), vec![Box::new(String::from("0"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::GreaterEq](Box::new(String::from("1")), vec![Box::new(String::from("1"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+
+        let result = default_functions[&FunctionName::Lower](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::LowerEq](Box::new(String::from("0")), vec![Box::new(String::from("1"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::Between](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::BetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::NotBetween](Box::new(String::from("2")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::NotBetweenEq](Box::new(String::from("1")), vec![Box::new(String::from("1")), Box::new(String::from("3"))]);
+        assert!(result.is_ok_and(|x| x == false));
+
+        let result = default_functions[&FunctionName::EqualIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("ANKIT"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::EqualAnyIgnoreCase](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::EqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("Ankit"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::NotEqualAny](Box::new(String::from("Ankit")), vec![Box::new(String::from("SHEORAN")), Box::new(String::from("ANKIT"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::StartsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Ankit"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::StartsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("ANKIT"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::EndsWith](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::EndsWithIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::Contains](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("Sheoran"))]);
+        assert!(result.is_ok_and(|x| x == true));
+
+        let result = default_functions[&FunctionName::ContainsIgnoreCase](Box::new(String::from("AnkitSheoran")), vec![Box::new(String::from("SHEORAN"))]);
+        assert!(result.is_ok_and(|x| x == true));
     }
 }
