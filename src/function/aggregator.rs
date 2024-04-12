@@ -28,7 +28,7 @@ fn parse_inputs_to_numbers(inputs: &[Box<dyn Any>]) -> Result<Vec<f64>, Box<dyn 
     Ok(inputs_nr)
 }
 
-type AggregateFunction = Box<dyn Fn(Vec<Box<dyn Any>>) -> Result<f64, Box<dyn Error>>>;
+pub type AggregateFunction = Box<dyn Fn(Vec<Box<dyn Any>>) -> Result<f64, Box<dyn Error>>>;
 
 fn default_aggregate_function() -> HashMap<Aggregator, AggregateFunction> {
     let mut m: HashMap< Aggregator, AggregateFunction>  = HashMap::new();

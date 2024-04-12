@@ -34,7 +34,7 @@ enum LogicalOperator {
     AND,
 }
 
-struct ConditionType {
+pub struct ConditionType {
     chain_type: LogicalOperator
 } 
 
