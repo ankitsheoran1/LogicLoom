@@ -1,6 +1,6 @@
 use crate::condition::Condition ;
 
-struct rule {
+pub struct Rule {
     name: String, 
     conditions: Vec<Condition>,
     

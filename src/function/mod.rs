@@ -31,7 +31,7 @@ pub enum SingleInputFunction {
    ContainsIgnoreCase
 }
 
-type Function = Box<dyn Fn(Box<dyn Any>, Vec<Box<dyn Any>>) -> Result<bool, Box<dyn Error>> + 'static>;
+pub type Function = Box<dyn Fn(Box<dyn Any>, Vec<Box<dyn Any>>) -> Result<bool, Box<dyn Error>> + 'static>;
 
 fn default() -> HashMap<SingleInputFunction, Function> {
     let mut map: HashMap<SingleInputFunction, Function>  = HashMap::new();

@@ -12,7 +12,7 @@ pub enum ListFunction {
     AtMostFraction
 }
 
-type ListFunctionConstraint = Box<dyn Fn(usize, usize, &[i32]) -> bool>;
+pub type ListFunctionConstraint = Box<dyn Fn(usize, usize, &[i32]) -> bool>;
 
 fn ListFunctionConstraintsArgumentNumber(constraintName: ListFunction) -> i32 {
     match constraintName {
