@@ -13,10 +13,14 @@ struct Engine {
     input_constraints: ListFunctionConstraint,
 }
 
+struct EngineConstructor {
+    user_functions: HashMap<String, Function>;
+}
+
 impl Engine {
     pub fn new() -> Self {
         Engine {
-            
+
         }
     }
 }
